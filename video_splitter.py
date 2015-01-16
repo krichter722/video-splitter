@@ -9,6 +9,7 @@ import plac
 import python_essentials
 import python_essentials.lib
 import python_essentials.lib.os_utils as os_utils
+import video_splitter_globals
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -28,9 +29,10 @@ melt_command_tail_default = ["f=mp4", "accodec=acc", "ab=256k", ]
     debug=("Enable debugging messages", "flag"), 
 )
 def video_splitter(input_path, output_dir_path, melt=melt_default, melt_command_tail=melt_command_tail_default, version=False, debug=False):
-    """Processes file_name if it denotes an existing file or if it is a directory all files in it."""
+    """
+    video_splitter serves to split videos based on automatic scene recognition. It uses `melt`s `motion_est` filter to determine frames in a video file which represent scene changes and creates a new video file from the beginning to the end of the scene ("output") which is stored into a configurable locaction (see `output_dir_path`). It processes `file_name` if it denotes an existing file or if it is a directory all files in it. The generation of the output is produced by `melt` and is fully configurable with the `melt_command_tail` argument."""
     if version is True:
-        print(video_splitter_version_string)
+        print(video_splitter_globals.app_version_string)
         return
     if debug is True:
         logger.setLevel(logging.DEBUG)
@@ -89,7 +91,7 @@ def video_splitter(input_path, output_dir_path, melt=melt_default, melt_command_
         logger.info("split file '%s' into %d clips" % (input_file, len(frames)))
         last_start = frames.popleft()
         while len(frames) > 0:
-            start = frames.popleft()
+            start = str(int(frames.popleft())-1) # don't let the last and the first frame overlap
             output_file_path = "%s.avi" % (os.path.join(output_dir_path, "%s-%s-%s" % (os.path.basename(input_file), last_start, start)), )
             melt_encode_cmds = [melt, input_file, "in=%s" % (last_start, ), "out=%s" % (start, ), "-consumer", "avformat:%s" % (output_file_path, ), ]+melt_command_tail
             logger.debug("creating clip from scene from frame %s to frame %s as '%s' with %s" % (last_start, start, output_file_path, str(melt_encode_cmds)))
