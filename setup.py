@@ -28,6 +28,31 @@
 #    Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
 
 from setuptools import setup, find_packages
+from pkg_resources import parse_version
+import os
+import subprocess as sp
+
+git_default = "git"
+
+def __app_version__(git=git_default, ):
+    """Retrieves the version in form of a `StrictVersion` object from git by checking it HEAD is tagged and then returns the tag name or the output of `git describe --tags` otherwise. Uses `git` as git binary. See [PEP 386][1] for an overview over the quite smart attempt to deal with the version mess in this world - gently speaking.
+    
+    [1]:https://www.python.org/dev/peps/pep-0386/"""
+    try:
+        ret_value = parse_version(sp.check_output([git, "describe", "--tags", ], cwd=os.path.dirname(os.path.realpath(__file__))).strip())
+        return ret_value
+    except sp.CalledProcessError:
+        ret_value = parse_version(sp.check_output([git, "describe", "--tags", "--long", ], cwd=os.path.dirname(os.path.realpath(__file__))).strip())
+        return ret_value
+
+from Cheetah.Template import Template
+t = Template(file="video_splitter_globals.py.tmpl")
+t.app_version = __app_version__()
+t_file = open("video_splitter_globals.py", "w")
+t_file.write(str(t))
+t_file.flush()
+t_file.close()
+
 import video_splitter_globals
 
 setup(

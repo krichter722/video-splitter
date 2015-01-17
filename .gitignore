@@ -1,3 +1,6 @@
 *.pyc
 build/
 dist/
+
+# generated from templates (name.py.tmpl) in setup.py
+video_splitter_globals.py
