@@ -5,5 +5,5 @@ A command line tool for automated video splitting. You can e.g. specify a file a
 Invoke `python video_splitter.py -h` for usage information. Currently I didn't figure out `melt` yet, so there's no sound in the output. At a later point the `melt` parameters for clip creation should be configurable on the command line.
 
 ## Prerequisties
-Make sure `pip` is installed (e.g. with `sudo apt-get install python-pip` on Ubuntu 14.10) and run `python setup.py build` (this will fetch all necessary dependencies) and install the aac codec (e.g. with `sudo apt-get install aac-enc` on Ubuntu 14.10).
+Make sure `pip` and the python templating engine `Cheetah` are installed (e.g. with `sudo apt-get install python-pip` on Ubuntu 14.10) and run `python setup.py build` (this will fetch all necessary dependencies) and install the aac codec (e.g. with `sudo apt-get install aac-enc` on Ubuntu 14.10).
 
