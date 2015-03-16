@@ -67,7 +67,10 @@ class AbstractVideoSplitter:
         if not os.path.exists(input_path):
             raise ValueError("input_path '%s' doesn't exist" % (input_path, ))
         if not os.path.exists(output_dir_path):
-            raise ValueError("output_dir_path '%s' doesn't exist" % (output_dir_path, ))
+            self.logger.info("creating non-existing output directory '%s'" % (output_dir_path, ))
+            os.makedirs(output_dir_path)
+        elif len(os.listdir(output_dir_path)) > 0:
+            raise ValueError("output_dir_path '%s' isn't empty" % (output_dir_path, ))
         if not os.path.isdir(output_dir_path):
             raise ValueError("output_dir_path '%s' isn't a directory" % (output_dir_path, ))
         self.output_dir_path = output_dir_path
