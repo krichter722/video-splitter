@@ -59,7 +59,7 @@ setup(
     name = video_splitter_globals.app_name,
     version = video_splitter_globals.app_version_string,
     packages = ["."],
-    install_requires = ["cheetah", "plac >= 0.9.1", "beautifulsoup4", "python-essentials", ],
+    install_requires = ["cheetah", "plac>=0.9.1", "beautifulsoup4", "python-essentials", ],
     
     # metadata for upload to PyPI
     author = "Karl-Philipp Richter",
