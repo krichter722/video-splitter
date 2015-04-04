@@ -92,6 +92,11 @@ class AbstractVideoSplitter:
             raise RuntimeError("The aac codec is not installed on your system (the binary '%s' is missing). Install it and try again" % (aac_binary, ))
         if os_utils.which(melt) is None:
             raise RuntimeError("The melt binary '%s' is not available. Install it and try again" % (melt, ))
+        analyseplugin_binary = "/usr/bin/analyseplugin"
+        applyplugin_binary = "/usr/bin/applyplugin"
+        listplugin_binary = "/usr/bin/listplugins"
+        if not os.path.exists(analyseplugin_binary) or not os.path.exists(applyplugin_binary) or not os.path.exists(listplugin_binary):
+            raise RuntimeError("one or more of the binaries '%s', '%s' and '%s' are missing which indicates that ladspa-sdk is missing. Install it and try again." % (analyseplugin_binary, applyplugin_binary, listplugin_binary, ))
         self.melt = melt
         self.melt_command_tail = melt_command_tail
 
