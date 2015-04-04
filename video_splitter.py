@@ -90,6 +90,8 @@ class AbstractVideoSplitter:
         aac_binary = "aac-enc"
         if os_utils.which(aac_binary) is None:
             raise RuntimeError("The aac codec is not installed on your system (the binary '%s' is missing). Install it and try again" % (aac_binary, ))
+        if os_utils.which(melt) is None:
+            raise RuntimeError("The melt binary '%s' is not available. Install it and try again" % (melt, ))
         self.melt = melt
         self.melt_command_tail = melt_command_tail
 
