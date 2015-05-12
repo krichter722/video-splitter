@@ -148,7 +148,10 @@ class VideoSplitter(AbstractVideoSplitter):
                 output_file_path = "%s.avi" % (os.path.join(self.output_dir_path, "%s-%s-%s" % (os.path.basename(input_file), last_start, start)), )
                 melt_encode_cmds = [self.melt, input_file, "in=%s" % (last_start, ), "out=%s" % (start, ), "-consumer", "avformat:%s" % (output_file_path, ), ]+self.melt_command_tail
                 self.logger.debug("creating clip from scene from frame %s to frame %s as '%s' with %s" % (last_start, start, output_file_path, str(melt_encode_cmds)))
-                sp.check_call(melt_encode_cmds, stderr=open(os.devnull))
+                melt_encode_process = sp.Popen(melt_encode_cmds, stdout=sp.PIPE, stderr=sp.PIPE)
+                melt_encode_process_stderr = melt_encode_process.communicate()[1] # rather than Popen.wait use Popen.communicate to suppress output and only display it if an error occured; naively assume that only stderr is interesting; naively assume that the outupt of `melt` won't fill up memory (use a temporary file if that becomes an issue)
+                if melt_encode_process.returncode != 0:
+                    raise RuntimeError("melt process failed with output:\n%s" % (melt_encode_process_stderr, ))
                 last_start = start
 
 @plac.annotations(
