@@ -42,6 +42,13 @@ melt_default = "melt"
 melt_command_tail_default = ["f=mp4", "accodec=acc", "ab=256k", ]
 recursive_default = False
 
+# melt encode process might fail with error
+# `max_analyze_duration 5000000 reached` (not yet researched whether a specific
+# return code is given, so that the value can be handled automatically).
+# Eventually this means a broken duration, so that increasing the value
+# shouldn't help. The default seems to be 5000000.
+melt_encode_analyse_duration = 50000000
+
 __plac_input_path_doc__ = "A file to be processed or a directory of which all contained video files will be processed (non-video files are ignored)"
 __plac_output_dir_path_doc__ = "An existing directory into which the resulting clips are copied"
 __plac_melt_doc__ = "Path to a melt binary"
@@ -146,12 +153,12 @@ class VideoSplitter(AbstractVideoSplitter):
             while len(frames) > 0:
                 start = str(int(frames.popleft())-1) # don't let the last and the first frame overlap
                 output_file_path = "%s.avi" % (os.path.join(self.output_dir_path, "%s-%s-%s" % (os.path.basename(input_file), last_start, start)), )
-                melt_encode_cmds = [self.melt, input_file, "in=%s" % (last_start, ), "out=%s" % (start, ), "-consumer", "avformat:%s" % (output_file_path, ), ]+self.melt_command_tail
+                melt_encode_cmds = [self.melt, input_file, "in=%s" % (last_start, ), "out=%s" % (start, ), "analyzeduration", str(melt_encode_analyse_duration), "-consumer", "avformat:%s" % (output_file_path, ), ]+self.melt_command_tail
                 self.logger.debug("creating clip from scene from frame %s to frame %s as '%s' with %s" % (last_start, start, output_file_path, str(melt_encode_cmds)))
                 melt_encode_process = sp.Popen(melt_encode_cmds, stdout=sp.PIPE, stderr=sp.PIPE)
                 melt_encode_process_stderr = melt_encode_process.communicate()[1] # rather than Popen.wait use Popen.communicate to suppress output and only display it if an error occured; naively assume that only stderr is interesting; naively assume that the outupt of `melt` won't fill up memory (use a temporary file if that becomes an issue)
                 if melt_encode_process.returncode != 0:
-                    raise RuntimeError("melt process failed with output:\n%s" % (melt_encode_process_stderr, ))
+                    raise RuntimeError("melt process failed with returncode %d and output:\n%s" % (melt_encode_process.returncode, melt_encode_process_stderr, ))
                 last_start = start
 
 @plac.annotations(
