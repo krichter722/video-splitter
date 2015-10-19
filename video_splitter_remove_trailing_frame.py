@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@ import tempfile
 class VideoSplitterRemoveTrailingFrame(video_splitter.AbstractVideoSplitter):
     def __init__(self, input_path, output_dir_path, melt=video_splitter.melt_default, melt_command_tail=video_splitter.melt_command_tail_default, recursive=video_splitter.recursive_default, version=False, debug=False):
         video_splitter.AbstractVideoSplitter.__init__(self, input_path, output_dir_path, melt, melt_command_tail, recursive, version, debug)
-    
+
     def removeTrailingFrame(self, ):
         for input_file in self.input_files:
             melt_process_cmds = [self.melt, input_file, "-attach", "motion_est", "-consumer", "xml", "all=1", ] # scanning the whole file to retrieve an XML summary is probalby not very efficient, but it works for instance
@@ -49,7 +49,7 @@ class VideoSplitterRemoveTrailingFrame(video_splitter.AbstractVideoSplitter):
                 melt_process_output_stderr = melt_process_output_tuple[1]
                 self.logger.error("melt process failed with output '%s', skipping input file" % (melt_process_output_stderr, ))
                 continue
-            
+
             soup = bs4.BeautifulSoup(melt_process_output)
             soup_producers = soup.find_all("producer")
             if len(soup_producers) != 1:
@@ -63,13 +63,13 @@ class VideoSplitterRemoveTrailingFrame(video_splitter.AbstractVideoSplitter):
             sp.check_call(melt_encode_cmds, stderr=open(os.devnull))
 
 @plac.annotations(
-    input_path=(video_splitter.__plac_input_path_doc__), 
-    output_dir_path=(video_splitter.__plac_output_dir_path_doc__), 
-    melt=(video_splitter.__plac_melt_doc__), 
-    melt_command_tail=(video_splitter.__plac_melt_command_tail_doc__), 
-    recursive=(video_splitter.__plac_recursive_doc__, "flag"), 
-    version=(video_splitter.__plac_version_doc__, "flag"), 
-    debug=(video_splitter.__plac_debug_doc__, "flag"), 
+    input_path=(video_splitter.__plac_input_path_doc__),
+    output_dir_path=(video_splitter.__plac_output_dir_path_doc__),
+    melt=(video_splitter.__plac_melt_doc__),
+    melt_command_tail=(video_splitter.__plac_melt_command_tail_doc__),
+    recursive=(video_splitter.__plac_recursive_doc__, "flag"),
+    version=(video_splitter.__plac_version_doc__, "flag"),
+    debug=(video_splitter.__plac_debug_doc__, "flag"),
 )
 def remove_trailing_frame(input_path, output_dir_path, melt=video_splitter.melt_default, melt_command_tail=video_splitter.melt_command_tail_default, recursive=video_splitter.recursive_default, version=False, debug=False):
     """Removes the trailing frame which has been added by accident in versions of video-splitter below 1.2."""
