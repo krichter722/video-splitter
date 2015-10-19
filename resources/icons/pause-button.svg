@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="640" xmlns="http://www.w3.org/2000/svg" height="480">
+ <defs>
+  <filter id="filter3316">
+   <feGaussianBlur id="feGaussianBlur3318" stdDeviation="0.586716"/>
+  </filter>
+ </defs>
+ <g id="g3356" fill-rule="evenodd">
+  <path id="path2383" filter="url(#filter3316)" stroke="#000" d="m401.72 252.14a149.02 140.55 0 1 1 -298.03 0 149.02 140.55 0 1 1 298.03 0z"/>
+  <g stroke-width=".931" stroke="#fff" fill="#e6e6e6">
+   <rect id="rect3237" y="178.62" width="47.258" height="147.05" x="273"/>
+   <rect id="rect3239" y="178.62" width="47.258" height="147.05" x="185.14"/>
+  </g>
+  <path id="path3245" opacity=".5" d="m251.36 114.54c-79.983 0-144.92 62.99-144.92 140.57 128.77-27.462 160.13-27.824 289.76 0 0-77.584-64.852-140.57-144.84-140.57z" stroke-opacity=".183" stroke="#000" fill="#fff"/>
+ </g>
+</svg>

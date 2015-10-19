@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="640" xmlns="http://www.w3.org/2000/svg" height="480">
+ <defs>
+  <filter id="filter3316">
+   <feGaussianBlur id="feGaussianBlur3318" stdDeviation="0.586716"/>
+  </filter>
+ </defs>
+ <g id="g3368" externalResourcesRequired="false" fill-rule="evenodd">
+  <path id="svg_11" filter="url(#filter3316)" stroke="#000" d="m502.9 252.5a148.02 140.61 0 1 1 -296.03 0 148.02 140.61 0 1 1 296.03 0z"/>
+  <g stroke-opacity=".183">
+   <path id="svg_12" fill="#e6e6e6" stroke="#fff" d="m458.94 253l-82.238 43.346-82.238 43.346 0.3134-87.195 0.3164-87.195 81.922 43.848 81.925 43.848z"/>
+   <path id="svg_13" opacity=".5" d="m353.55 114.83c-79.445 0.000137-143.95 63.019-143.95 140.64 127.91-27.476 159.06-27.839 287.81 0 0-77.619-64.418-140.64-143.86-140.64z" stroke="#000" fill="#fff"/>
+  </g>
+ </g>
+</svg>

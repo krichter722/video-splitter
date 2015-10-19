@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="159.61" xmlns="http://www.w3.org/2000/svg" height="159.61">
+ <defs>
+  <linearGradient id="svg_1">
+   <stop stop-color="#f7f7f4" stop-opacity=".996" offset="0"/>
+   <stop stop-opacity=".996" offset="1"/>
+   <stop stop-color="#00f" offset="1"/>
+  </linearGradient>
+  <linearGradient id="svg_33">
+   <stop stop-color="#f9f8f7" stop-opacity=".996" offset="0"/>
+   <stop stop-color="#020202" stop-opacity=".996" offset="1"/>
+  </linearGradient>
+  <radialGradient id="svg_36">
+   <stop stop-color="#111" stop-opacity=".992" offset=".80078"/>
+   <stop stop-color="#f7f4f4" stop-opacity=".992" offset="1"/>
+   <stop stop-color="#f9f7f7" stop-opacity=".992" offset="1"/>
+  </radialGradient>
+ </defs>
+ <g stroke-width="0">
+  <ellipse id="svg_27" rx="78.25" ry="79.25" cy="80.143" cx="80.054" fill="url(#svg_36)"/>
+  <g fill-rule="evenodd">
+   <path id="path2540" fill="url(#svg_33)" d="m95.588 137.22c17.142-4.5932 30.756-15.892 38.906-30.442 13.237-31.336-36.15 42.03-76.942 28.702 11.858 4.349 25.032 5.2245 38.036 1.74z"/>
+   <path id="path2197" fill="url(#svg_1)" d="m80.409 15.112c-35.493 0-64.298 29.563-64.298 65.99 0 4.9265 0.54671 9.7216 1.5458 14.341 35.285-67.921 73.301-25.167 122.32-39.192-9.5719-24.118-32.638-41.139-59.564-41.139z"/>
+  </g>
+ </g>
+ <path id="text2705" opacity=".735" d="m99.998 114.72l-19.511-19.511-19.695 19.695-16.088-16.088 19.695-19.695-19.511-19.511 15.66-15.66 19.511 19.511 19.756-19.756 16.088 16.088-19.756 19.756 19.511 19.511-15.66 15.66"/>
+ <path id="text2713" fill="#f4eded" d="m99.885 111.99l-19.429-19.429-19.582 19.582-13.411-13.411 19.582-19.582-19.429-19.429 13.054-13.054 19.429 19.429 19.633-19.633 13.412 13.411-19.633 19.633 19.429 19.429-13.054 13.054"/>
+</svg>
