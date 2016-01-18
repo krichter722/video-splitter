@@ -54,6 +54,7 @@ import sys
 import re
 import send2trash
 import collections
+import python_essentials.lib.os_utils as os_utils
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -91,6 +92,8 @@ class VideoManager(wx.Frame):
         @args mp4box %(__mp4box_doc__)s
         """ % {"__mp4box_doc__": __mp4box_doc__}
         wx.Frame.__init__(self, parent, id, title, size=(600, 500))
+        if os_utils.which(mp4box) is None:
+            raise ValueError("mp4box binary '%s' not found or not executable (on Ubuntu make sure the package `gpac` is installed)" % (mp4box,))
         self.mp4box = mp4box
         self.undoStack = collections.deque() # the undo stack to track un- and
                 # redoable categorization
