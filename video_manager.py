@@ -86,7 +86,7 @@ __mp4box_doc__ = "the `mp4box` binary to use"
 
 class VideoManager(wx.Frame):
 
-    def __init__(self, parent, id, title, mp4box, categories=["1", "2", "3", "4", "5","split"]):
+    def __init__(self, parent, id, title, mp4box, categories=["1", "2", "3", "4", "5","split"], input_directory=None, review_folder=None):
         """
         @args mp4box %(__mp4box_doc__)s
         """ % {"__mp4box_doc__": __mp4box_doc__}
@@ -106,8 +106,15 @@ class VideoManager(wx.Frame):
         self.videoPanel = wx.Panel(mainSplitter)
 
         self.workingSet = set([])
+        if input_directory is None:
+            logger.debug("using empty initial working set")
+            working_set = set([]) # don't add to self.workingSet before
+                    # addFilesToWorkingSet has been called below
+        else:
+            logger.debug("using '%s' as initial input directory" % (input_directory,))
+            working_set = set(filter(lambda x: os.path.isfile(x), [os.path.abspath(os.path.join(input_directory, i)) for i in os.listdir(input_directory)])) # filter necessary in order to avoid failure of retrieval of min and max in __split_item__
         standardPaths = wx.StandardPaths.Get()
-        self.reviewFolder = None # the folder where video which aren't splitted
+        self.reviewFolder = review_folder # the folder where video which aren't splitted
             # correctly or need other reviewing are moved to; a default value
             # is too confusing and setting value by the user should be enforced
         self.currentFolder = standardPaths.GetDocumentsDir() # stores the folder of the
@@ -158,6 +165,7 @@ class VideoManager(wx.Frame):
         controlSizer.Add(self.stopButton, 0, wx.LEFT, 3)
 
         self.mplayerCtrl = wx.media.MediaCtrl(self.videoPanel, -1)
+        self.trackPath = None
         self.playbackSlider = wx.Slider(self.videoPanel, size=wx.DefaultSize)
         self.playbackSlider.Bind(wx.EVT_SLIDER, self.onOffsetSet)
         sliderSizer.Add(self.playbackSlider, 1, wx.ALL|wx.EXPAND, 5)
@@ -196,13 +204,13 @@ class VideoManager(wx.Frame):
         self.listsPanel.SetSizer(listsPanelSizer)
         listsSplitterPanelLeft = wx.Panel(parent=listsSplitter)
         listsSplitterPanelRight = wx.Panel(parent=listsSplitter)
-        self.workingSetList = wx.ListCtrl(parent=listsSplitterPanelLeft, id=wx.ID_ANY, style=wx.LC_EDIT_LABELS|wx.LC_REPORT)
+        self.workingSetList = wx.ListCtrl(parent=listsSplitterPanelLeft, id=wx.ID_ANY, style=wx.LC_REPORT) # don't make entries editable
         workingSetListSizer = wx.BoxSizer(wx.VERTICAL)
         categoryButtonSizer = wx.WrapSizer(wx.HORIZONTAL)
         selectionListSizer = wx.BoxSizer(wx.VERTICAL)
         self.selectButton = wx.Button(parent=listsSplitterPanelRight, id=wx.ID_ANY, label=">", size=wx.Size(icon_size_default, icon_size_default))
         self.deselectButton = wx.Button(parent=listsSplitterPanelRight, id=wx.ID_ANY, label="<", size=wx.Size(icon_size_default, icon_size_default))
-        self.selectionList = wx.ListCtrl(parent=listsSplitterPanelRight, id=wx.ID_ANY, style=wx.LC_EDIT_LABELS|wx.LC_REPORT)
+        self.selectionList = wx.ListCtrl(parent=listsSplitterPanelRight, id=wx.ID_ANY, style=wx.LC_REPORT)
         self.workingSetList.InsertColumn(0, heading="File", width=wx.LIST_AUTOSIZE)
         self.selectionList.InsertColumn(0, heading="File", width=wx.LIST_AUTOSIZE)
         self.mergeButton = wx.Button(parent=listsSplitterPanelRight, id=wx.ID_ANY, label="merge selection")
@@ -220,6 +228,11 @@ class VideoManager(wx.Frame):
                         logger.debug("no item selected in working set list, so nothing to categorize")
                         return
                     selected_item = self.workingSetList.GetItem(selected_index, col=0)
+                    # playback should be stopped before moving file
+                    selected_item_playbacked = False # store info for later (much simpler code for the price of one flag)
+                    if selected_item.GetText() == self.trackPath:
+                        selected_item_playbacked = True
+                        self.stopPlayback()
                     category_folder = os.path.join(self.reviewFolder, str(category))
                     if not os.path.exists(category_folder):
                         os.makedirs(category_folder)
@@ -229,6 +242,18 @@ class VideoManager(wx.Frame):
                     self.undoStack.append((selected_item.GetText(), category, selected_index))
                     self.editMenuItemRedo.Enable(False)
                     self.redoStack.clear()
+                    # automatically start the next item after the categorized in workingSetList in order to proceed faster and select it (but only if the just moved item is currently playbacked because otherwise the playback of another item would be interrupted)
+                    if self.workingSetList.GetItemCount() > 0 \
+                            and selected_index < self.workingSetList.GetItemCount()-1 \
+                            and selected_item_playbacked: # there needs to be one more item after the categorized one (refers to item count after removal of categorized item)
+                        selected_item = self.workingSetList.GetItem(selected_index, col=0)
+                        self.trackPath = selected_item.GetText()
+                        logger.info("starting video '%s'" % (self.trackPath,))
+                        self.startVideo(self.trackPath)
+                        self.workingSetList.SetItemState(selected_index, # item
+                                wx.LIST_STATE_SELECTED, # state
+                                wx.LIST_STATE_SELECTED # stateMask
+                        )
                 return __onCategoryButtonClick__
             category_button.Bind(wx.EVT_BUTTON, __createCategoryButtonClickCallback__(category))
         workingSetListSizer.Add(categoryButtonSizer, 0, wx.ALL|wx.EXPAND, 5)
@@ -271,6 +296,8 @@ class VideoManager(wx.Frame):
         self.statusBar = self.CreateStatusBar(style=wx.STB_DEFAULT_STYLE)
         self.statusBar.SetFieldsCount(1)
         self.statusBar.SetStatusStyles([wx.SB_NORMAL]) # @TODO: wx.SB_SUNKEN only available after 2.9.5<ref>http://wxpython.org/Phoenix/docs/html/StatusBar.html</ref> -> assert 3.0.x at run and compile time somewhere
+        self.addFilesToWorkingSet(working_set) # run after self.workingSetList has been initialized
+        self.workingSet = working_set
         self.updateReviewFolderStatusText()
 
         self.Show(True)
@@ -311,6 +338,8 @@ class VideoManager(wx.Frame):
             selected_item = next_selected_item.GetText()
             logger.debug("selecting item '%s'" % (selected_item,))
             self.selectionList.Append([selected_item])
+        self.workingSetList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+        self.selectionList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
 
     def onDeselectButtonClick(self, event):
         """
@@ -331,16 +360,18 @@ class VideoManager(wx.Frame):
             selected_item = next_selected_item.GetText()
             logger.debug("deselecting item '%s'" % (selected_item,))
             self.workingSetList.InsertStringItem(0, selected_item)
+        self.workingSetList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+        self.selectionList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
 
     def onSelectionListDoubleClick(self, event):
         selected_item = event.GetItem()
-        trackPath = selected_item.GetText()
-        self.startVideo(trackPath)
+        self.trackPath = selected_item.GetText()
+        self.startVideo(self.trackPath)
 
     def onWorkingSetListDoubleClick(self, event):
         selected_item = event.GetItem()
-        trackPath = selected_item.GetText()
-        self.startVideo(trackPath)
+        self.trackPath = selected_item.GetText()
+        self.startVideo(self.trackPath)
 
     def onWorkingSetListRightClick(self, event):
         self.workingSetList.PopupMenu(self.workingSetListPopupMenu, event.GetPoint())
@@ -356,6 +387,8 @@ class VideoManager(wx.Frame):
             next_selected = self.workingSetList.GetNextSelected(next_selected)
         for selected_index in selected_indices:
             next_selected_item = self.workingSetList.GetItem(selected_index, col=0)
+            if next_selected_item.GetText() == self.trackPath:
+                self.stopPlayback()
             logger.debug("moving '%s' to trash" % (next_selected_item.GetText(),))
             send2trash.send2trash(next_selected_item.GetText())
             self.workingSetList.DeleteItem(selected_index)
@@ -365,9 +398,10 @@ class VideoManager(wx.Frame):
         if self.reviewFolder is None:
             new_text += "(not yet selected)"
         else:
-            new_text += self.reviewFolder
-            self.statusBar.PopStatusText(0 # field
-            )
+            new_text += os.path.abspath(self.reviewFolder)
+            # since there's no way to determine whether
+            # wx.StatusBar.PopStatusText succeeds simply always push status
+            # texts over the preceeding
         self.statusBar.PushStatusText(new_text, # string
             0 # field
         )
@@ -396,13 +430,7 @@ class VideoManager(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
             paths = dlg.GetPaths()
             # set doesn't support adding a collection because of hashable type issue, but checking if value is already present improves logging feedback
-            for path in paths:
-                if path in self.workingSet:
-                    logger.debug("skipping already added file '%s'" % (path,))
-                    continue
-                self.workingSet.add(path)
-                self.workingSetList.InsertStringItem(self.workingSetList.GetItemCount(), path)
-                logger.debug("added file '%s' to working set" % (path,))
+            self.addFilesToWorkingSet(paths)
             self.currentFolder = os.path.dirname(paths[0])
 
     def onAddFromDirectory(self, event):
@@ -416,19 +444,30 @@ class VideoManager(wx.Frame):
             )
         if dlg.ShowModal() == wx.ID_OK:
             path = dlg.GetPath()
-            for new_file_name in os.listdir(path):
-                file_extension = video_splitter.retrieve_file_extension(new_file_name)
-                new_file_path = os.path.join(path, new_file_name)
-                if not file_extension in video_splitter_globals.video_file_extensions:
-                    logger.debug("skipping non-video file '%s' based on extension" % (new_file_path,))
-                    continue
-                if new_file_path in self.workingSet:
-                    logger.debug("skipping already added file '%s'" % (new_file_path,))
-                    continue
-                self.workingSet.add(new_file_path)
-                self.workingSetList.InsertStringItem(self.workingSetList.GetItemCount(), new_file_path)
-                logger.debug("added file '%s' to working set" % (new_file_path,))
+            files = [os.path.abspath(os.path.join(path, i)) for i in os.listdir(path)]
+            self.addFilesToWorkingSet(files)
             self.currentFolder = dlg.GetPath()
+
+    def addFilesToWorkingSet(self, files):
+        # filter first because it needs to be done and otherwise __split_item__
+        # fails for files without name matching bla-n-n.ext (e.g. review
+        # folders)
+        def __filter_file__(file0):
+            file_extension = video_splitter.retrieve_file_extension(file0)
+            if not file_extension in video_splitter_globals.video_file_extensions:
+                logger.debug("skipping non-video file '%s' based on extension" % (file0,))
+                return False
+            if file0 in self.workingSet:
+                logger.debug("skipping already added file '%s'" % (file0,))
+                return False
+            return True
+        files = [i for i in files if __filter_file__(i)]
+        for new_file_path in sorted(files, key=lambda x: __split_item__(x)[3]+"%050d" % (__split_item__(x)[1],)): # sorting with item_min of __split_item__ isn't sufficient because we need to include the item_head as well; then sort by joining head and item_min with 50 leading zeros (assuming that item_min's length won't exceed 50 digits)
+            self.workingSet.add(new_file_path)
+            self.workingSetList.InsertStringItem(self.workingSetList.GetItemCount(), new_file_path)
+            logger.debug("added file '%s' to working set" % (new_file_path,))
+        self.workingSetList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+
 
     def onSetReviewFolder(self, event):
         wildcard = "Media Files (*.*)|*.*"
@@ -448,10 +487,10 @@ class VideoManager(wx.Frame):
             self.updateReviewFolderStatusText()
 
     def onMediaStarted(self, event):
-        print 'Media started!'
+        logger.debug("playback started of '%s'" % (self.trackPath,))
 
     def onMediaFinished(self, event):
-        print 'Media finished!'
+        logger.debug("playback finished of '%s'" % (self.trackPath,))
         self.playbackTimer.Stop()
         self.paused = False
         self.playbackSlider.SetValue(0)
@@ -472,6 +511,7 @@ class VideoManager(wx.Frame):
                 self.mplayerCtrl.Play()
                 self.playbackTimer.Start()
             else:
+                # start new playback (see function comment for explanation)
                 selection_list_selected_index = self.selectionList.GetNextSelected(-1)
                 selected_item = None
                 if selection_list_selected_index != -1:
@@ -481,9 +521,9 @@ class VideoManager(wx.Frame):
                     if working_set_list_selected_index != -1:
                         selected_item = self.workingSetList.GetItem(working_set_list_selected_index, col=0)
                 if selected_item != None:
-                    trackPath = selected_item.GetText()
-                    logger.info("starting video '%s'" % (trackPath,))
-                    self.startVideo(trackPath)
+                    self.trackPath = selected_item.GetText()
+                    logger.info("starting video '%s'" % (self.trackPath,))
+                    self.startVideo(self.trackPath)
             self.paused = False
 
     def startVideo(self, trackPath):
@@ -505,7 +545,10 @@ class VideoManager(wx.Frame):
 
     def onStop(self, event):
         """"""
-        print "stopping..."
+        self.stopPlayback()
+
+    def stopPlayback(self):
+        logger.debug("stopping playback")
         self.mplayerCtrl.Stop()
         self.playbackTimer.Stop()
 
@@ -553,24 +596,15 @@ class VideoManager(wx.Frame):
         min_offset = sys.maxint
         max_offset = -1
         for item in item_list:
-            item_ext_split = str.rsplit(item, # work with complete path (instead of
-                    # just the filename) in order to avoid unnecessary joining
-                    # later
-                ".", # set
-                1 # maxsplit
-            )
-            re_input = item_ext_split[0]
-            item_ext = item_ext_split[1]
-            re_result = re.split("-", re_input, maxsplit=3)
-            if re_result == None:
+            item_tuple = __split_item__(item)
+            if item_tuple is None:
                 continue
-            re_min = int(re_result[-2])
-            re_max = int(re_result[-1])
-            if re_min < min_offset:
-                min_offset = re_min
-            if re_max > max_offset:
-                max_offset = re_max
-        output_file_path = "%s-%d-%d.%s" % (re_result[0], min_offset, max_offset,item_ext,)
+            item_ext, item_min, item_max, item_head = item_tuple
+            if item_min < min_offset:
+                min_offset = item_min
+            if item_max > max_offset:
+                max_offset = item_max
+        output_file_path = "%s-%d-%d.%s" % (item_head, min_offset, max_offset,item_ext,)
         # merging
         merge_cmd_list = []
         for item in item_list:
@@ -621,6 +655,28 @@ class VideoManager(wx.Frame):
         self.workingSetList.DeleteItem(old_index)
         self.undoStack.append((file_path, category, old_index))
 
+def __split_item__(item):
+    item_ext_split = str.rsplit(str(item), # work with complete path (instead of
+            # just the filename) in order to avoid unnecessary joining
+            # later
+        ".", # sep
+        1 # maxsplit
+    )
+    minus_split_input = item_ext_split[0]
+    try:
+        item_ext = item_ext_split[1]
+        minus_split = re.split("-", minus_split_input)
+    except Exception as ex:
+        print (ex, item_ext_split)
+    if minus_split == None:
+        return None
+    try:
+        item_min = int(minus_split[-2])
+        item_max = int(minus_split[-1])
+        item_head = str.join("-", minus_split[0:-2])
+        return (item_ext, item_min, item_max, item_head)
+    except ValueError:
+        raise ValueError("encountered item '%s' which doesn't match the required input format of a filename ending in '-[begin frame]-[end frame].[extension]'" % (item,))
 
 def __generate_window_title__(title):
     if title is None:
@@ -632,8 +688,10 @@ def __generate_window_title__(title):
 @plac.annotations(mp4box=(__mp4box_doc__, "option"),
     version=(video_splitter_globals.__version_doc__, "flag"),
     debug=(video_splitter_globals.__debug_doc__, "flag"),
+    input_directory=("a directory to read video files from", "positional"),
+    review_folder=("the review folder", "option"),
 )
-def __main_delegate__(mp4box=mp4box_default, version=False, debug=False):
+def __main_delegate__(mp4box=mp4box_default, version=False, debug=False, input_directory=None, review_folder=None):
     """necessary function to make `plac.call` possible in `main`"""
     if version is True:
         print(video_splitter_globals.app_version_string)
@@ -642,7 +700,7 @@ def __main_delegate__(mp4box=mp4box_default, version=False, debug=False):
         logger.setLevel(logging.DEBUG)
         ch.setLevel(logging.DEBUG)
     app = wx.App(False)
-    frame = VideoManager(None, wx.ID_ANY, __generate_window_title__(None), mp4box=mp4box)
+    frame = VideoManager(None, wx.ID_ANY, __generate_window_title__(None), mp4box=mp4box, input_directory=input_directory, review_folder=review_folder)
     frame.Show(True)
     app.MainLoop()
 
