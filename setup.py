@@ -31,43 +31,29 @@ from setuptools import setup, find_packages
 from pkg_resources import parse_version
 import os
 import subprocess as sp
-
-git_default = "git"
-
-def __app_version__(git=git_default, ):
-    """Retrieves the version in form of a `StrictVersion` object from git by checking it HEAD is tagged and then returns the tag name or the output of `git describe --tags` otherwise. Uses `git` as git binary. See [PEP 386][1] for an overview over the quite smart attempt to deal with the version mess in this world - gently speaking.
-
-    [1]:https://www.python.org/dev/peps/pep-0386/"""
-    try:
-        ret_value = parse_version(sp.check_output([git, "describe", "--tags", ], cwd=os.path.dirname(os.path.realpath(__file__))).strip())
-        return ret_value
-    except sp.CalledProcessError:
-        ret_value = parse_version(sp.check_output([git, "describe", "--tags", "--long", ], cwd=os.path.dirname(os.path.realpath(__file__))).strip())
-        return ret_value
-
-from Cheetah.Template import Template
-t = Template(file="video_splitter_globals.py.tmpl")
-t.app_version = __app_version__()
-t_file = open("video_splitter_globals.py", "w")
-t_file.write(str(t))
-t_file.flush()
-t_file.close()
-
-import video_splitter_globals
+import video_splitter.video_splitter_globals as video_splitter_globals
 
 setup(
     name = video_splitter_globals.app_name,
-    version = video_splitter_globals.app_version_string,
-    package_dir = {'':'.'},
+    version_command=('git describe --tags', "pep440-git-local"),
     packages = find_packages(),
-    setup_requires = ["cheetah"],
+    setup_requires = ["setuptools-version-command"],
     dependency_links = [
         "git+https://github.com/wxWidgets/Phoenix.git#egg=Phoenix"
     ],
-    install_requires = ["plac>=0.9.1", "beautifulsoup4", "python-essentials", "Phoenix", "MplayerCtrl", "cairosvg", "Send2Trash"],
+    install_requires = ["plac>=0.9.1", "beautifulsoup4", "python-essentials",
+        # "Phoenix",
+        "MplayerCtrl", "cairosvg", "Send2Trash"],
     include_package_data = True,
     package_data = {
-        '': ['resources/icons/*.svg'],
+        'video_manager:main': ['resources/icons/*.svg'],
+        'video_splitter:main': ['resources/icons/*.svg'],
+    },
+    entry_points={
+        'console_scripts': [
+            '%s = video_splitter.video_manager:main' % ("video-manager", ),
+            '%s = video_splitter.video_splitter:main' % (video_splitter_globals.app_name, ),
+        ],
     },
 
     # metadata for upload to PyPI

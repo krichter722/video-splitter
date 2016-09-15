@@ -37,6 +37,7 @@ import python_essentials
 import python_essentials.lib
 import python_essentials.lib.os_utils as os_utils
 import video_splitter_globals
+import pkg_resources
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -54,6 +55,8 @@ recursive_default = False
 # Eventually this means a broken duration, so that increasing the value
 # shouldn't help. The default seems to be 5000000.
 melt_encode_analyse_duration = 50000000
+
+app_version = pkg_resources.require("video_splitter")[0].version
 
 __input_path_doc__ = "A file to be processed or a directory of which all contained video files will be processed (non-video files are ignored)"
 __output_dir_path_doc__ = "An existing directory into which the resulting clips are copied"
@@ -177,7 +180,7 @@ def __main_delegate__(input_path, output_dir_path, melt=melt_default, melt_comma
     """
     video_splitter serves to split videos based on automatic scene recognition. It uses `melt`s `motion_est` filter to determine frames in a video file which represent scene changes and creates a new video file from the beginning to the end of the scene ("output") which is stored into a configurable locaction (see `output_dir_path`). It processes `file_name` if it denotes an existing file or if it is a directory all files in it. The generation of the output is produced by `melt` and is fully configurable with the `melt_command_tail` argument."""
     if version is True:
-        print(video_splitter_globals.app_version_string)
+        print(app_version)
         return
     if debug is True:
         logger.setLevel(logging.DEBUG)
