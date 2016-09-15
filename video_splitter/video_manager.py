@@ -54,6 +54,7 @@ import sys
 import re
 import send2trash
 import collections
+import python_essentials.lib.os_utils as os_utils
 import pkg_resources
 
 logger = logging.getLogger(__name__)
@@ -94,6 +95,8 @@ class VideoManager(wx.Frame):
         @args mp4box %(__mp4box_doc__)s
         """ % {"__mp4box_doc__": __mp4box_doc__}
         wx.Frame.__init__(self, parent, id, title, size=(600, 500))
+        if os_utils.which(mp4box) is None:
+            raise ValueError("mp4box binary '%s' not found or not executable (on Ubuntu make sure the package `gpac` is installed)" % (mp4box,))
         self.mp4box = mp4box
         self.undoStack = collections.deque() # the undo stack to track un- and
                 # redoable categorization
@@ -450,21 +453,27 @@ class VideoManager(wx.Frame):
             files = [os.path.abspath(os.path.join(path, i)) for i in os.listdir(path)]
             self.addFilesToWorkingSet(files)
             self.currentFolder = dlg.GetPath()
-    
+
     def addFilesToWorkingSet(self, files):
-        for new_file_path in sorted(files, key=lambda x: __split_item__(x)[3]+"%050d" % (__split_item__(x)[1],)): # sorting with item_min of __split_item__ isn't sufficient because we need to include the item_head as well; then sort by joining head and item_min with 50 leading zeros (assuming that item_min's length won't exceed 50 digits)
-            file_extension = video_splitter.retrieve_file_extension(new_file_path)
+        # filter first because it needs to be done and otherwise __split_item__
+        # fails for files without name matching bla-n-n.ext (e.g. review
+        # folders)
+        def __filter_file__(file0):
+            file_extension = video_splitter.retrieve_file_extension(file0)
             if not file_extension in video_splitter_globals.video_file_extensions:
-                logger.debug("skipping non-video file '%s' based on extension" % (new_file_path,))
-                continue
-            if new_file_path in self.workingSet:
-                logger.debug("skipping already added file '%s'" % (new_file_path,))
-                continue
+                logger.debug("skipping non-video file '%s' based on extension" % (file0,))
+                return False
+            if file0 in self.workingSet:
+                logger.debug("skipping already added file '%s'" % (file0,))
+                return False
+            return True
+        files = [i for i in files if __filter_file__(i)]
+        for new_file_path in sorted(files, key=lambda x: __split_item__(x)[3]+"%050d" % (__split_item__(x)[1],)): # sorting with item_min of __split_item__ isn't sufficient because we need to include the item_head as well; then sort by joining head and item_min with 50 leading zeros (assuming that item_min's length won't exceed 50 digits)
             self.workingSet.add(new_file_path)
             self.workingSetList.InsertStringItem(self.workingSetList.GetItemCount(), new_file_path)
             logger.debug("added file '%s' to working set" % (new_file_path,))
         self.workingSetList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
-        
+
 
     def onSetReviewFolder(self, event):
         wildcard = "Media Files (*.*)|*.*"
@@ -543,7 +552,7 @@ class VideoManager(wx.Frame):
     def onStop(self, event):
         """"""
         self.stopPlayback()
-    
+
     def stopPlayback(self):
         logger.debug("stopping playback")
         self.mplayerCtrl.Stop()
