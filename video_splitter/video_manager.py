@@ -458,6 +458,8 @@ class VideoManager(wx.Frame):
         # filter first because it needs to be done and otherwise __split_item__
         # fails for files without name matching bla-n-n.ext (e.g. review
         # folders)
+        if len(files) == 0:
+            return
         def __filter_file__(file0):
             file_extension = video_splitter.retrieve_file_extension(file0)
             if not file_extension in video_splitter_globals.video_file_extensions:
