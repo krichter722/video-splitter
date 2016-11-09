@@ -43,7 +43,8 @@ setup(
     ],
     install_requires = ["plac>=0.9.1", "beautifulsoup4", "python-essentials",
         # "Phoenix",
-        "MplayerCtrl", "cairosvg", "Send2Trash"],
+        "MplayerCtrl", "cairosvg<2", # 2.x only supports python3<ref>http://cairosvg.org/</ref>
+            "Send2Trash"],
     include_package_data = True,
     package_data = {
         'video_manager:main': ['resources/icons/*.svg'],
