@@ -50,7 +50,7 @@ class VideoSplitterRemoveTrailingFrame(video_splitter.AbstractVideoSplitter):
                 self.logger.error("melt process failed with output '%s', skipping input file" % (melt_process_output_stderr, ))
                 continue
 
-            soup = bs4.BeautifulSoup(melt_process_output)
+            soup = bs4.BeautifulSoup(melt_process_output, "lxml")
             soup_producers = soup.find_all("producer")
             if len(soup_producers) != 1:
                 raise AssertionError("melt XML output contains more than one or no producer elements, can't proceed, skipping")

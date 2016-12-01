@@ -135,7 +135,7 @@ class VideoSplitter(AbstractVideoSplitter):
                 logger.error("melt process failed with output '%s', skipping input file" % (melt_process_output_stderr, ))
                 continue
 
-            soup = bs4.BeautifulSoup(melt_process_output)
+            soup = bs4.BeautifulSoup(melt_process_output, "lxml")
             soup_properties = soup.find_all("property") # <property name="shot_change_list"> is sometimes in playlist and sometimes in produces (querying all property elements is easier than understanding that)
             frames_string = None
             for soup_property in soup_properties:
