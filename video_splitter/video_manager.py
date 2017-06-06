@@ -66,6 +66,13 @@ logger.addHandler(ch)
 mp4box_default = "MP4Box"
 icon_size_default = 24
 
+# Playback is running
+PLAYBACK_STATE_RUNNING = 1
+# Playback was running before, but isn't currently
+PLAYBACK_STATE_PAUSED = 2
+# Playback has been reset to start or was never started
+PLAYBACK_STATE_STOPPED = 4
+
 def __generate_video_file_extensions_wildcard__():
     ret_value = "Video files ("
     ret_value += "*.%s" % (video_splitter_globals.video_file_extensions[0],)
@@ -127,7 +134,6 @@ class VideoManager(wx.Frame):
             # last selection of input files (initially set to a convenient
             # default value, like $HOME)
         self.currentVolume = 0.5
-        self.paused = False
 
         self.menuBar = wx.MenuBar()
         self.fileMenu = wx.Menu()
@@ -172,6 +178,10 @@ class VideoManager(wx.Frame):
 
         self.mplayerCtrl = wx.media.MediaCtrl(self.videoPanel, -1)
         self.trackPath = None
+        self.playbackState = PLAYBACK_STATE_STOPPED
+            # could be checked with self.playbackTime.IsRunning, but then the
+            # status depends on using the timer and it's harder to debug issues
+            # with it
         self.playbackSlider = wx.Slider(self.videoPanel, size=wx.DefaultSize)
         self.playbackSlider.Bind(wx.EVT_SLIDER, self.onOffsetSet)
         sliderSizer.Add(self.playbackSlider, 1, wx.ALL|wx.EXPAND, 5)
@@ -189,8 +199,6 @@ class VideoManager(wx.Frame):
         sliderSizer.Add(self.trackCounter, 0, wx.ALL|wx.CENTER, 5)
 
         # set up playback timer
-        self.playbackTimer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.onUpdatePlayback)
 
         videoSizer.Add(self.mplayerCtrl, 1, wx.ALL|wx.EXPAND, 5)
         videoSizer.Add(sliderSizer, 0, wx.ALL|wx.EXPAND, 5)
@@ -499,8 +507,7 @@ class VideoManager(wx.Frame):
 
     def onMediaFinished(self, event):
         logger.debug("playback finished of '%s'" % (self.trackPath,))
-        self.playbackTimer.Stop()
-        self.paused = False
+        self.playbackState = PLAYBACK_STATE_STOPPED
         self.playbackSlider.SetValue(0)
         self.trackCounter.SetLabel("00:00")
 
@@ -508,16 +515,15 @@ class VideoManager(wx.Frame):
         """Starts and unpauses video after the play button has been pressed.
         Plays the selected item in working set list or selection list (only one
         list can have a selected item). Does nothing is no item is selected."""
-        if self.playbackTimer.IsRunning():
+        if self.playbackState == PLAYBACK_STATE_RUNNING:
             logger.info("pausing...")
             self.mplayerCtrl.Pause()
-            self.playbackTimer.Stop()
-            self.paused = True
+        #    self.playbackTimer.Stop()
+            self.playbackState = PLAYBACK_STATE_PAUSED
         else:
-            if self.paused:
+            if self.playbackState == PLAYBACK_STATE_PAUSED:
                 logger.info("unpausing...")
                 self.mplayerCtrl.Play()
-                self.playbackTimer.Start()
             else:
                 # start new playback (see function comment for explanation)
                 selection_list_selected_index = self.selectionList.GetNextSelected(-1)
@@ -532,16 +538,16 @@ class VideoManager(wx.Frame):
                     self.trackPath = selected_item.GetText()
                     logger.info("starting video '%s'" % (self.trackPath,))
                     self.startVideo(self.trackPath)
-            self.paused = False
+            self.playbackState = PLAYBACK_STATE_RUNNING
 
     def startVideo(self, trackPath):
-        if not self.paused:
+        if not self.playbackState == PLAYBACK_STATE_PAUSED:
             # first start
             self.mplayerCtrl.Load(trackPath)
         self.mplayerCtrl.Play()
         t_len = self.mplayerCtrl.Length()
         self.playbackSlider.SetRange(0, t_len)
-        self.playbackTimer.Start(100)
+        self.playbackState = PLAYBACK_STATE_RUNNING
 
     def onVolumeSet(self, event):
         """
@@ -558,7 +564,7 @@ class VideoManager(wx.Frame):
     def stopPlayback(self):
         logger.debug("stopping playback")
         self.mplayerCtrl.Stop()
-        self.playbackTimer.Stop()
+        self.playbackState = PLAYBACK_STATE_STOPPED
 
     def onUpdatePlayback(self, event):
         """
