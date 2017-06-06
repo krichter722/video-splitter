@@ -176,7 +176,10 @@ class VideoManager(wx.Frame):
         self.stopButton.Disable()
         controlSizer.Add(self.stopButton, 0, wx.LEFT, 3)
 
-        self.mplayerCtrl = wx.media.MediaCtrl(self.videoPanel, -1)
+        self.mplayerCtrl = wx.media.MediaCtrl(self.videoPanel, -1, #szBackend=wx.media.MEDIABACKEND_GSTREAMER
+                # `wx.media.MEDIABACKEND_DIRECTSHOW`, `wx.media.MEDIABACKEND_MCI` and `wx.media.MEDIABACKEND_QUICKTIME` fail due to `(video-manager:1392): Gtk-CRITICAL **: IA__gtk_range_set_range: assertion 'min < max' failed` at every video start
+                )
+        #self.mplayerCtrl.ShowPlayerControls(wx.media.MEDIACTRLPLAYERCONTROLS_DEFAULT)
         self.trackPath = None
         self.playbackState = PLAYBACK_STATE_STOPPED
             # could be checked with self.playbackTime.IsRunning, but then the
