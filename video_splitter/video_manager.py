@@ -601,7 +601,7 @@ class VideoManager(wx.Frame):
         selection_list_item_count = self.selectionList.GetItemCount()
         item_list = []
         for row in range(selection_list_item_count):
-            selectionItem = self.selectionList.GetItem(itemId=row, col=0)
+            selectionItem = self.selectionList.GetItem(itemIdx=row, col=0)
             next_item = str(selectionItem.GetText())
             logger.debug("adding '%s' to merge list" % (next_item,))
             item_list.append(next_item)
