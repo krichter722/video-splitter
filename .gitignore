@@ -3,3 +3,4 @@ build/
 dist/
 video_splitter.egg-info/
 .eggs/
+setuptools_version_command-2.2-py2.7.egg/
