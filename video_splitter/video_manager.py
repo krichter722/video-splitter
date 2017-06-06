@@ -373,7 +373,7 @@ class VideoManager(wx.Frame):
             self.selectionList.DeleteItem(selected_index)
             selected_item = next_selected_item.GetText()
             logger.debug("deselecting item '%s'" % (selected_item,))
-            self.workingSetList.InsertStringItem(0, selected_item)
+            self.workingSetList.InsertItem(0, selected_item)
         self.workingSetList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
         self.selectionList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
 
@@ -480,7 +480,7 @@ class VideoManager(wx.Frame):
         files = [i for i in files if __filter_file__(i)]
         for new_file_path in sorted(files, key=lambda x: __split_item__(x)[3]+"%050d" % (__split_item__(x)[1],)): # sorting with item_min of __split_item__ isn't sufficient because we need to include the item_head as well; then sort by joining head and item_min with 50 leading zeros (assuming that item_min's length won't exceed 50 digits)
             self.workingSet.add(new_file_path)
-            self.workingSetList.InsertStringItem(self.workingSetList.GetItemCount(), new_file_path)
+            self.workingSetList.InsertItem(self.workingSetList.GetItemCount(), new_file_path)
             logger.debug("added file '%s' to working set" % (new_file_path,))
         self.workingSetList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
 
@@ -636,7 +636,7 @@ class VideoManager(wx.Frame):
             os.remove(item)
         logger.debug("cleared selection list")
         self.selectionList.DeleteAllItems() # ListCtrl.ClearAll removes columns as well
-        self.selectionList.InsertStringItem(0, output_file_path)
+        self.selectionList.InsertItem(0, output_file_path)
 
     def onAboutBox(self, event):
         wx.AboutBox(video_splitter_globals.app_about_box_info)
@@ -652,7 +652,7 @@ class VideoManager(wx.Frame):
         category_folder = os.path.join(self.reviewFolder, str(category))
         logger.debug("undoing move of '%s' into category folder '%s'" % (file_path, category_folder))
         shutil.move(os.path.join(category_folder, os.path.basename(file_path)), file_path)
-        self.workingSetList.InsertStringItem(old_index, file_path)
+        self.workingSetList.InsertItem(old_index, file_path)
         self.redoStack.append((file_path, category, old_index))
         self.editMenuItemRedo.Enable(True)
 
