@@ -28,11 +28,10 @@
 #    Programm erhalten haben. Wenn nicht, siehe <http://www.gnu.org/licenses/>.
 
 # The video manager consists of a working set list (which allows adding video
-# files
-# from local storage) and a selection list which contains a selected items of
+# files from local storage) and a merge list which contains a selected items of
 # the working set list. Items are moved between lists and can be in one list
 # only. Items are played when the user double clicks on one of the lists. A
-# button allows merging all files in the selection list to one file. Video
+# button allows merging all files in the merge list to one file. Video
 # files can be deleted with a menu item in the context menu of both lists.
 
 import os
@@ -224,13 +223,13 @@ class VideoManager(wx.Frame):
         self.workingSetList = wx.ListCtrl(parent=listsSplitterPanelLeft, id=wx.ID_ANY, style=wx.LC_REPORT) # don't make entries editable
         workingSetListSizer = wx.BoxSizer(wx.VERTICAL)
         categoryButtonSizer = wx.WrapSizer(wx.HORIZONTAL)
-        selectionListSizer = wx.BoxSizer(wx.VERTICAL)
+        mergeListSizer = wx.BoxSizer(wx.VERTICAL)
         self.selectButton = wx.Button(parent=listsSplitterPanelRight, id=wx.ID_ANY, label=">", size=wx.Size(icon_size_default, icon_size_default))
         self.deselectButton = wx.Button(parent=listsSplitterPanelRight, id=wx.ID_ANY, label="<", size=wx.Size(icon_size_default, icon_size_default))
-        self.selectionList = wx.ListCtrl(parent=listsSplitterPanelRight, id=wx.ID_ANY, style=wx.LC_REPORT)
+        self.mergeList = wx.ListCtrl(parent=listsSplitterPanelRight, id=wx.ID_ANY, style=wx.LC_REPORT)
         self.workingSetList.InsertColumn(0, heading="File", width=wx.LIST_AUTOSIZE)
-        self.selectionList.InsertColumn(0, heading="File", width=wx.LIST_AUTOSIZE)
-        self.mergeButton = wx.Button(parent=listsSplitterPanelRight, id=wx.ID_ANY, label="merge selection")
+        self.mergeList.InsertColumn(0, heading="File", width=wx.LIST_AUTOSIZE)
+        self.mergeButton = wx.Button(parent=listsSplitterPanelRight, id=wx.ID_ANY, label="merge")
         for category in categories:
             category_button = wx.Button(parent=listsSplitterPanelLeft, id=wx.ID_ANY, label=str(category))
             categoryButtonSizer.Add(category_button, 0, wx.ALL, 5)
@@ -279,18 +278,18 @@ class VideoManager(wx.Frame):
         listsButtonSizer.Add(self.selectButton, 0, wx.ALL, 5)
         listsButtonSizer.Add(self.deselectButton, 0, wx.ALL, 5)
         listsSplitterPanelRightSizer.Add(listsButtonSizer, 0, wx.ALL, 5)
-        selectionListSizer.Add(self.selectionList, 1, wx.ALL|wx.EXPAND, 5)
-        selectionListSizer.Add(self.mergeButton, 0, wx.ALIGN_BOTTOM|wx.ALL, 5)
-        listsSplitterPanelRightSizer.Add(selectionListSizer, 1, wx.EXPAND, 5)
+        mergeListSizer.Add(self.mergeList, 1, wx.ALL|wx.EXPAND, 5)
+        mergeListSizer.Add(self.mergeButton, 0, wx.ALIGN_BOTTOM|wx.ALL, 5)
+        listsSplitterPanelRightSizer.Add(mergeListSizer, 1, wx.EXPAND, 5)
         listsSplitterPanelRight.SetSizer(listsSplitterPanelRightSizer)
         self.workingSetList.Bind(wx.EVT_LIST_ITEM_ACTIVATED, #The item has been activated (ENTER or double click). Processes a wxEVT_LIST_ITEM_ACTIVATED event type.
             self.onWorkingSetListDoubleClick)
         self.workingSetList.Bind(wx.EVT_LIST_ITEM_SELECTED, self.onWorkingSetListSelect)
         self.workingSetList.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.onWorkingSetListDeselect)
-        self.selectionList.Bind(wx.EVT_LIST_ITEM_ACTIVATED, #The item has been activated (ENTER or double click). Processes a wxEVT_LIST_ITEM_ACTIVATED event type.
-            self.onSelectionListDoubleClick)
-        self.selectionList.Bind(wx.EVT_LIST_ITEM_SELECTED, self.onSelectionListSelect)
-        self.selectionList.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.onSelectionListDeselect)
+        self.mergeList.Bind(wx.EVT_LIST_ITEM_ACTIVATED, #The item has been activated (ENTER or double click). Processes a wxEVT_LIST_ITEM_ACTIVATED event type.
+            self.onMergeListDoubleClick)
+        self.mergeList.Bind(wx.EVT_LIST_ITEM_SELECTED, self.onMergeListSelect)
+        self.mergeList.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.onMergeListDeselect)
         self.selectButton.Bind(wx.EVT_BUTTON, self.onSelectButtonClick)
         self.deselectButton.Bind(wx.EVT_BUTTON, self.onDeselectButtonClick)
         self.mergeButton.Bind(wx.EVT_BUTTON, self.onMergeButtonClick)
@@ -320,22 +319,22 @@ class VideoManager(wx.Frame):
         self.Show(True)
 
     def onWorkingSetListDeselect(self, event):
-        if self.workingSetList.GetSelectedItemCount() == 0 and self.selectionList.GetSelectedItemCount() == 0:
+        if self.workingSetList.GetSelectedItemCount() == 0 and self.mergeList.GetSelectedItemCount() == 0:
             self.playButton.Disable()
             self.stopButton.Disable()
 
-    def onSelectionListDeselect(self, event):
-        if self.workingSetList.GetSelectedItemCount() == 0 and self.selectionList.GetSelectedItemCount() == 0:
+    def onMergeListDeselect(self, event):
+        if self.workingSetList.GetSelectedItemCount() == 0 and self.mergeList.GetSelectedItemCount() == 0:
             self.playButton.Disable()
             self.stopButton.Disable()
 
     def onWorkingSetListSelect(self, event):
-        """Removes all selection on selectionList in order to allow videos to be played based on selection (doesn't make sense if items are selected on two lists)"""
-        for i in range(0, self.selectionList.GetItemCount()):
-            self.selectionList.Select(i, on=0)
+        """Removes all selection on mergeList in order to allow videos to be played based on selection (doesn't make sense if items are selected on two lists)"""
+        for i in range(0, self.mergeList.GetItemCount()):
+            self.mergeList.Select(i, on=0)
         self.playButton.Enable()
 
-    def onSelectionListSelect(self, event):
+    def onMergeListSelect(self, event):
         """Removes all selection on workingSetList in order to allow videos to be played based on selection (doesn't make sense if items are selected on two lists)"""
         for i in range(0, self.workingSetList.GetItemCount()):
             self.workingSetList.Select(i, on=0)
@@ -354,33 +353,33 @@ class VideoManager(wx.Frame):
             self.workingSetList.DeleteItem(selected_index)
             selected_item = next_selected_item.GetText()
             logger.debug("selecting item '%s'" % (selected_item,))
-            self.selectionList.Append([selected_item])
+            self.mergeList.Append([selected_item])
         self.workingSetList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
-        self.selectionList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+        self.mergeList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
 
     def onDeselectButtonClick(self, event):
         """
-        Moves selected items from the selection list back to the working set
+        Moves selected items from the merge list back to the working set
         list. Prepends items (rather than append them) in order to avoid
         scrolling when dealing with a large working set
         """
         # need to collect all selected indices first because the ListCtrl.GetNextSelected doesn't modify the multi-selection state after ListCtrl.DeleteItem
         selected_indices = []
-        next_selected = self.selectionList.GetNextSelected(-1)
+        next_selected = self.mergeList.GetNextSelected(-1)
         while next_selected != -1:
             selected_indices.append(next_selected)
-            next_selected = self.selectionList.GetNextSelected(next_selected)
+            next_selected = self.mergeList.GetNextSelected(next_selected)
         # need to remove backwards
         for selected_index in sorted(selected_indices, reverse=True):
-            next_selected_item = self.selectionList.GetItem(selected_index, col=0)
-            self.selectionList.DeleteItem(selected_index)
+            next_selected_item = self.mergeList.GetItem(selected_index, col=0)
+            self.mergeList.DeleteItem(selected_index)
             selected_item = next_selected_item.GetText()
             logger.debug("deselecting item '%s'" % (selected_item,))
             self.workingSetList.InsertItem(0, selected_item)
         self.workingSetList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
-        self.selectionList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+        self.mergeList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
 
-    def onSelectionListDoubleClick(self, event):
+    def onMergeListDoubleClick(self, event):
         selected_item = event.GetItem()
         self.trackPath = selected_item.GetText()
         self.startVideo(self.trackPath)
@@ -516,7 +515,7 @@ class VideoManager(wx.Frame):
 
     def onPause(self, event):
         """Starts and unpauses video after the play button has been pressed.
-        Plays the selected item in working set list or selection list (only one
+        Plays the selected item in working set list or merge list (only one
         list can have a selected item). Does nothing is no item is selected."""
         if self.playbackState == PLAYBACK_STATE_RUNNING:
             logger.info("pausing...")
@@ -529,10 +528,10 @@ class VideoManager(wx.Frame):
                 self.mplayerCtrl.Play()
             else:
                 # start new playback (see function comment for explanation)
-                selection_list_selected_index = self.selectionList.GetNextSelected(-1)
+                selection_list_selected_index = self.mergeList.GetNextSelected(-1)
                 selected_item = None
                 if selection_list_selected_index != -1:
-                    selected_item = self.selectionList.GetItem(selection_list_selected_index, col=0)
+                    selected_item = self.mergeList.GetItem(selection_list_selected_index, col=0)
                 else:
                     working_set_list_selected_index = self.workingSetList.GetNextSelected(-1)
                     if working_set_list_selected_index != -1:
@@ -591,20 +590,20 @@ class VideoManager(wx.Frame):
 
     def onMergeButtonClick(self, event):
         """
-        Copies first file in the selection list to be the first piece of the
-        merged file and appends all items in the selection list to the file
+        Copies first file in the merge list to be the first piece of the
+        merged file and appends all items in the merge list to the file
         """
-        if self.selectionList.GetItemCount() == 0:
-            logger.debug("nothing to merge because selection list is empty")
+        if self.mergeList.GetItemCount() == 0:
+            logger.debug("nothing to merge because merge list is empty")
             return
-        if self.selectionList.GetItemCount() == 1:
-            logger.debug("nothing to merge because selection list contains only one item")
+        if self.mergeList.GetItemCount() == 1:
+            logger.debug("nothing to merge because merge list contains only one item")
             return
         # prepare merging
-        selection_list_item_count = self.selectionList.GetItemCount()
+        selection_list_item_count = self.mergeList.GetItemCount()
         item_list = []
         for row in range(selection_list_item_count):
-            selectionItem = self.selectionList.GetItem(itemIdx=row, col=0)
+            selectionItem = self.mergeList.GetItem(itemIdx=row, col=0)
             next_item = str(selectionItem.GetText())
             logger.debug("adding '%s' to merge list" % (next_item,))
             item_list.append(next_item)
@@ -637,9 +636,9 @@ class VideoManager(wx.Frame):
         for item in item_list:
             logger.debug("removing merged file '%s'" % (item,))
             os.remove(item)
-        logger.debug("cleared selection list")
-        self.selectionList.DeleteAllItems() # ListCtrl.ClearAll removes columns as well
-        self.selectionList.InsertItem(0, output_file_path)
+        logger.debug("cleared merge list")
+        self.mergeList.DeleteAllItems() # ListCtrl.ClearAll removes columns as well
+        self.mergeList.InsertItem(0, output_file_path)
 
     def onAboutBox(self, event):
         wx.AboutBox(video_splitter_globals.app_about_box_info)
