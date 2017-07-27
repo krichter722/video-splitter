@@ -350,10 +350,12 @@ class VideoManager(wx.Frame):
         # need to remove backwards
         for selected_index in sorted(selected_indices, reverse=True):
             next_selected_item = self.workingSetList.GetItem(selected_index, col=0)
+            logger.debug("removing item %d from working set list" % (selected_index,))
             self.workingSetList.DeleteItem(selected_index)
             selected_item = next_selected_item.GetText()
             logger.debug("selecting item '%s'" % (selected_item,))
-            self.mergeList.Append([selected_item])
+            # was `self.mergeList.Append([selected_item])`, unclear how this ever worked since the resulting order of merge list is clearly inverted in comparison to the original order of working set list if not added at item 0 because order is already inverted during deletion
+            self.mergeList.InsertItem(index=0, label=selected_item)
         self.workingSetList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
         self.mergeList.SetColumnWidth(0, wx.LIST_AUTOSIZE)
 
