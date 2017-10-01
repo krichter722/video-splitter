@@ -38,6 +38,7 @@ import python_essentials.lib
 import python_essentials.lib.os_utils as os_utils
 import video_splitter_globals
 import pkg_resources
+import threading
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -115,11 +116,11 @@ class VideoSplitter(AbstractVideoSplitter):
         AbstractVideoSplitter.__init__(self, input_path, output_dir_path, melt, melt_command_tail, recursive)
 
     def split(self):
-        for input_file in self.input_files:
+        def __split__(input_file):
             video_file_extension = retrieve_file_extension(input_file)
             if not video_file_extension in video_splitter_globals.video_file_extensions:
                 logger.debug("skipping non-video file '%s' based on extension" % (input_file, ))
-                continue
+                return
             split_filter_name = "motion_est" # in case mlt has not been configured with the `enable-gpl` flag at build time, the `motion_est` filter is not available, but the invokation succeeds nevertheless (the XML result is missing a filter section which is much more difficult to recognize than simply letting the script fail if the filter isn't present (which is tested with the following statement(s) and has been requested to be improved as https://sourceforge.net/p/mlt/bugs/222/)
             melt_filter_test_process_output = sp.check_output([self.melt, "-query", "\"filter\"", ])
             melt_filters = [i.strip(" -") for i in melt_filter_test_process_output.split("\n")]
@@ -133,7 +134,7 @@ class VideoSplitter(AbstractVideoSplitter):
             if not melt_process.returncode == 0:
                 melt_process_output_stderr = melt_process_output_tuple[1]
                 logger.error("melt process failed with output '%s', skipping input file" % (melt_process_output_stderr, ))
-                continue
+                return
 
             soup = bs4.BeautifulSoup(melt_process_output, "lxml")
             soup_properties = soup.find_all("property") # <property name="shot_change_list"> is sometimes in playlist and sometimes in produces (querying all property elements is easier than understanding that)
@@ -144,7 +145,7 @@ class VideoSplitter(AbstractVideoSplitter):
                     break
             if frames_string is None:
                 logger.info("no split result for '%s', skipping (mlt source installation might cause trouble, consider running `sudo make uninstall` in source root and install ` melt` in package manager" % (input_file, ))
-                continue
+                return
             frame_pairs = frames_string.split(";")
             frames = collections.deque()
             for frame_pair in frame_pairs:
@@ -162,6 +163,15 @@ class VideoSplitter(AbstractVideoSplitter):
                 if melt_encode_process.returncode != 0:
                     raise RuntimeError("melt process failed with returncode %d and output:\n%s" % (melt_encode_process.returncode, melt_encode_process_stderr, ))
                 last_start = start
+        threads = []
+        for input_file in self.input_files:
+            thread = threading.Thread(target=__split__, args=(input_file,))
+            thread.start()
+            threads.append(thread)
+        while len(threads) > 0:
+            logger.info("waiting for %d threads to terminate" % (len(threads),))
+            thread = threads.pop()
+            thread.join()
 
 def retrieve_file_extension(file_name):
     video_file_extension = file_name.split(".")[-1]
